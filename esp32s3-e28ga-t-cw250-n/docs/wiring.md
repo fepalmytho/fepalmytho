@@ -20,7 +20,12 @@ correspondre à l'orientation de la nappe de cette dalle. Une carte "top
 contact" ne fonctionnera pas dans le bon sens.
 
 Exemples trouvés (vérifier la disponibilité au moment de l'achat) :
-- FFC/FPC 40 Pin 0.5mm to DIP, Bottom Contact — Amazon (réf. B0BZ4YGRQP)
+- FFC/FPC 40 Pin 0.5mm to DIP, Bottom Contact — Amazon (réf. B0BZ4YGRQP,
+  fabricant SB Components) — **validé** : malgré le "2,4 mm" affiché sur la
+  fiche Amazon, la fiche technique officielle SB Components confirme un
+  brochage de sortie en 2,54 mm (2x20 pastilles), compatible breadboard,
+  et un connecteur SMT à levier bottom contact conforme à ce qu'il faut
+  pour cette dalle. Seul bémol : très peu d'avis sur la fiche Amazon.
 - FFC FPC 40 Pins 0.5mm Pitch to DIP 2.54mm PCB Converter Board (Bottom
   Contact) — Oz Robotics
 - 40 Pin 0.5mm & 1mm pitch FPC to DIP Breakout — Tinkersphere
@@ -43,8 +48,14 @@ Pour du SPI classique (CS / DC / SCK / MOSI), il faut le mode
 | 5 | IM2 | VDDI (3,3V) |
 | 6 | IM3 | GND |
 
-Ces 4 broches se strappent une fois pour toutes sur l'adaptateur (petit fil
-vers GND ou 3V3), ce ne sont pas des GPIO à piloter.
+**Les 4 broches sont à souder, pas seulement IM0 et IM3.** 2 vont au GND
+(IM0, IM3) et 2 vont au 3V3 (IM1, IM2) — c'est le fait que 2 d'entre elles
+partagent la même destination (GND) qui peut donner l'impression qu'il y
+en a moins à faire, mais les 4 fils sont nécessaires : si IM1 ou IM2 sont
+laissées flottantes, le contrôleur ne saura pas dans quel mode démarrer et
+l'écran ne s'initialisera pas (ou de façon aléatoire). Ce sont des straps
+matériels fixes, soudés une fois sur l'adaptateur — ce ne sont pas des GPIO
+à piloter depuis le code.
 
 ## 3. Table de câblage complète
 
@@ -82,22 +93,45 @@ de ce qu'une GPIO 3,3V de l'ESP32-S3 peut fournir directement : il faut un
 **convertisseur boost à courant constant**, pas une simple résistance
 série sur 3,3V.
 
-Options :
-- **Adafruit TPS61169 Constant Current Boost Converter for LEDs** — module
-  tout fait, entrée basse tension, sortie boost jusqu'à plusieurs dizaines
-  de volts, courant réglable, broche de gradation PWM pilotable directement
-  par une GPIO 3,3V. C'est le plus simple à intégrer.
-- Un module boost générique "constant current LED driver" (ex. autour des
-  puces AL8861/ME2108/MP3308), à condition de pouvoir régler/limiter le
-  courant à ~40 mA et d'accepter une entrée PWM ou EN pour le pilotage
-  depuis l'ESP32-S3.
+**Recommandation : Adafruit TPS61169 Constant Current Boost Converter for
+LEDs** — https://www.adafruit.com/product/6354 (aussi chez Pimoroni/The Pi
+Hut en UK/EU, souvent plus rapide/moins cher à livrer en France que
+Adafruit direct US).
+
+- Entrée 3-5V DC (donc alimentable directement en 5V ou en 3,3V).
+- Boost jusqu'à ~40V / 400mA (pas les deux maxis en même temps).
+- Courant réglable par mini-DIP switches : ~25mA par défaut (tout éteint),
+  chaque switch ajoute +25/+50/+100/+200mA. Pour viser les ~40mA typiques
+  du datasheet (répartis sur les 2 chaînes de LED en parallèle), démarrer
+  avec le réglage par défaut (25mA, aucun switch activé) — déjà proche du
+  besoin réel par chaîne — et n'activer le switch "+25mA" que si l'écran
+  paraît trop sombre.
+- Broche de gradation PWM pilotable directement par une GPIO 3,3V de
+  l'ESP32-S3, pas de translation de niveau nécessaire.
 
 Brancher : `LEDA` (broche 40, anode) sur la sortie + du driver, `LEDK`
 (broche 39, cathode) sur la sortie - du driver, et la broche PWM/EN du
 driver sur `TFT_BL_PWM` (GPIO6 dans `src/main.cpp`).
 
-## 5. Alimentation logique
+Alternative générique si indisponible : un module boost "constant current
+LED driver" (puces type AL8861/ME2108/MP3308), à condition de pouvoir
+régler/limiter le courant à ~40 mA et d'accepter une entrée PWM ou EN.
+
+## 5. Alimentation
 
 `VDD` et `VDDI` acceptent tous les deux 3,3V (VDD: 2,4-3,3V typ 2,75V ;
 VDDI: 1,65-3,3V typ 1,8V), donc l'alimentation 3V3 de l'ESP32-S3 convient
 directement pour les deux, pas besoin de level-shifter sur les lignes SPI.
+
+Une seule alim 5V (chargeur USB-C) pour tout le projet fonctionne :
+- Le 5V va sur l'entrée USB-C/5V-VIN de la carte ESP32-S3, qui régule elle
+  même en interne le 3,3V pour le MCU — ce même rail 3,3V alimente `VDD`
+  et `VDDI` de l'écran.
+- Le driver de rétroéclairage (TPS61169) accepte 3-5V en entrée : on peut
+  le piquer directement sur le même 5V (avant régulation) ou sur le 3,3V
+  de la carte, les deux fonctionnent. Prendre le 5V limite légèrement les
+  pertes du boost (moins de gain de tension à fournir jusqu'à ~12V).
+- Attention au courant total disponible : un chargeur USB-C 5V/1A ou plus
+  est largement suffisant (ESP32-S3 ~ quelques centaines de mA en pointe
+  Wi-Fi, écran + logique quelques mA, backlight ~25-50mA côté boost, donc
+  ~100-150mA côté 5V une fois le rendement du boost pris en compte).
