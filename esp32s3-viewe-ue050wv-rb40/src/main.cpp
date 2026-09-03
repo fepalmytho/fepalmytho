@@ -1,10 +1,10 @@
-// Viewe LCM-UE050WV-AB40-L159A (ST72568, 800x480) on an ESP32-S3, driven
-// natively over the internal RGB/DPI LCD peripheral -- SYNC-DE mode
-// (DCLK, HSYNC, VSYNC, DE all driven by the ESP32-S3, see docs/wiring.md).
+// Viewe LCM-UEED050WV-RB40-L001A (ST7282A, 800x480, Transflective) on an
+// ESP32-S3, driven natively over the internal RGB/DPI LCD peripheral --
+// no MCU/serial mode to select, the bus is fixed RGB (see docs/wiring.md).
 //
 // Wired as RGB565 (16 data lines: the 5/6/5 MSBs of R/G/B). The 8 LSB
 // lines (R0-R2, G0-G1, B0-B2) are tied to GND on the FPC adapter and are
-// NOT connected to the ESP32-S3 -- see docs/wiring.md for why.
+// NOT connected to the ESP32-S3.
 
 #include <Arduino_GFX_Library.h>
 
@@ -34,15 +34,18 @@
 #define TFT_B3 35
 #define TFT_B4 36
 
+// Timings from datasheet section 5.4 (typ. values, 800x480 @ 60Hz).
+// CLK/HSYNC/VSYNC are all "Negative polarity" per the I/O table -- if the
+// image rolls/shifts on first bring-up, flip the two polarity args below.
 Arduino_ESP32RGBPanel *bus = new Arduino_ESP32RGBPanel(
     TFT_DE, TFT_VSYNC, TFT_HSYNC, TFT_PCLK,
     TFT_R0, TFT_R1, TFT_R2, TFT_R3, TFT_R4,
     TFT_G0, TFT_G1, TFT_G2, TFT_G3, TFT_G4, TFT_G5,
     TFT_B0, TFT_B1, TFT_B2, TFT_B3, TFT_B4,
-    1 /* hsync_polarity */, 4 /* hsync_front_porch */, 4 /* hsync_pulse_width */, 8 /* hsync_back_porch */,
-    1 /* vsync_polarity */, 4 /* vsync_front_porch */, 4 /* vsync_pulse_width */, 8 /* vsync_back_porch */,
-    1 /* pclk_active_neg, DCLK is negative polarity per datasheet */,
-    14000000 /* prefer_speed -- start conservative, datasheet typ is 25MHz */);
+    0 /* hsync_polarity */, 40 /* hsync_front_porch */, 24 /* hsync_pulse_width */, 160 /* hsync_back_porch */,
+    0 /* vsync_polarity */, 37 /* vsync_front_porch */, 2 /* vsync_pulse_width */, 23 /* vsync_back_porch */,
+    1 /* pclk_active_neg, CLK is negative polarity per datasheet */,
+    16000000 /* prefer_speed -- start conservative, datasheet typ is 32.4MHz */);
 
 Arduino_RGB_Display *gfx = new Arduino_RGB_Display(
     800 /* width */, 480 /* height */, bus, 0 /* rotation */, true /* auto_flush */);
