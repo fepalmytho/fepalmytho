@@ -79,11 +79,33 @@ validé et si les fils sont courts.
 | Forward Current (IF) | 70mA typ |
 | Puissance | 1,19W |
 
-Avec le 12V du bord disponible sur le bateau : boost 12V→17-18,6V (ratio
-×1,4-1,55, facile), un module boost ajustable à courant constant (type
-XL6009) dimensionné pour ~1,5-2W avec marge convient. Peut être piloté en
-tout-ou-rien ou en gradation depuis l'ESP32-S3 pour tirer parti du mode
-transflectif (baisser/éteindre en plein jour).
+### Architecture d'alimentation retenue (12V bateau -> écran)
+
+Un seul point de régulation partagé, pour que tout le reste du circuit
+voie une tension stable malgré les variations du 12V bord (10,5-14,5V) :
+
+```
+12V bateau -> [buck 12V->5V, ex. Pololu D24V5Fx ou module auto MP1584] -> 5V stable
+                                                                        -> ESP32-S3 (5V/VIN)
+                                                                        -> Adafruit TPS61169 (IN)
+                                                                             -> boost auto-ajusté (16-18,6V) -> LEDA/LEDK
+```
+
+- **Buck 12V->5V** : absorbe toute l'instabilité du bord. Un seul module
+  à choisir avec une plage d'entrée large (couvrant au moins 9-16V).
+- **Adafruit TPS61169** (boost constant-current, entrée 3-5V) alimenté
+  par ce même 5V. **Ne pas chercher à fixer une tension de sortie** — le
+  TPS61169 ajuste lui-même sa tension de sortie (dans la plage naturelle
+  16-18,6V de ce panneau) pour maintenir le courant réglé par les DIP
+  switches. C'est le fonctionnement normal d'un driver à courant
+  constant, cohérent avec le fait que VF de la datasheet est une plage
+  et non une valeur fixe.
+- **Réglage DIP switch recommandé : 25mA (défaut) + 50mA = 75mA total**
+  -> ~25mA par LED répartis sur les 3 branches parallèles (typ
+  fabricant : 20mA/LED, max absolu : 120mA/LED) — marge confortable.
+- Le courant réglé peut être ajusté (PWM sur la broche de gradation du
+  TPS61169) pour tirer parti du mode transflectif : baisser/éteindre en
+  plein jour, remonter au besoin la nuit.
 
 ## Alimentation logique
 
