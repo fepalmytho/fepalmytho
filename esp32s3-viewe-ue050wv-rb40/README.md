@@ -1,15 +1,20 @@
-# Viewe LCM-UEED050WV-RB40-L001A + ESP32-S3
+# Viewe LCM-UEED050WV-RB40-L001A + shield ESP32-S3 UEDX80480050E-WB-B
 
 Projet PlatformIO pour piloter l'écran TFT transflectif Viewe
 LCM-UEED050WV-RB40-L001A (5,0", 800x480, RGB parallèle, ST7282A, 220
-cd/m²) depuis un ESP32-S3, via le périphérique RGB/DPI natif de
-l'ESP32-S3 (pas de puce de conversion SPI->parallèle nécessaire).
+cd/m²), acheté séparément, branché sur le shield ESP32-S3
+UEDX80480050E-WB-B fourni par le vendeur (le shield a son propre écran
+tactile par défaut, non utilisé ici).
 
-- `docs/wiring.md` : câblage RGB565 (20 GPIO), timings, driver de
-  rétroéclairage boost 17-18,6V nécessaire (le transflectif ne dispense
+- `docs/wiring.md` : specs de l'écran (RGB565, timings, driver de
+  rétroéclairage boost 17-18,6V nécessaire — le transflectif ne dispense
   pas du boost, il permet juste d'éteindre le backlight en plein jour).
-- `src/main.cpp` : initialisation du bus RGB via Arduino_GFX + affichage
-  "Hello World".
+- `docs/shield.md` : le shield lui-même — GPIO fixes (non modifiables,
+  carte manufacturée), alimentation (5V uniquement, pas de 12V natif),
+  pourquoi son circuit backlight n'est pas utilisé pour cet écran, et
+  combien de GPIO restent libres pour le reste du projet.
+- `src/main.cpp` : initialisation du bus RGB via Arduino_GFX avec les
+  vraies broches du shield + affichage "Hello World".
 
 ## Build
 
@@ -18,6 +23,6 @@ pio run -e esp32-s3-devkitc-1
 pio run -t upload
 ```
 
-Adapter les définitions `TFT_*` en haut de `src/main.cpp` aux GPIO
-réellement câblés, et vérifier que ta carte ESP32-S3 expose bien 20 GPIO
-libres (certaines variantes réservent des broches à la PSRAM/flash).
+Les broches `TFT_*` dans `src/main.cpp` sont fixées par le shield
+(voir `docs/shield.md`), pas à modifier sauf erreur constatée au
+premier test.

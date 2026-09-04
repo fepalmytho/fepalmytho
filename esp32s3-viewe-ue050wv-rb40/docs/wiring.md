@@ -1,5 +1,10 @@
 # Câblage Viewe LCM-UEED050WV-RB40-L001A <-> ESP32-S3
 
+> **Le câblage physique se fait maintenant via le shield du vendeur**
+> (`docs/shield.md`) plutôt qu'un adaptateur générique — ce fichier
+> reste la référence pour les specs propres à l'écran (timings,
+> rétroéclairage), mais les broches GPIO réelles sont celles du shield.
+
 5,0" **Transflective** TFT, 800×480, contrôleur **ST7282A**, 220 cd/m²
 typ (mode transmissif/backlight allumé), nappe FPC 40 broches / 0,5mm
 pitch. Interface RGB parallèle 24-bit fixe, pas de mode à sélectionner
